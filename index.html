@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Lending App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page-shell">
+    <section class="hero-copy" aria-label="Welcome message">
+      <p class="eyebrow"></p>
+      <h1>Money Lending App.</h1>
+      <p class="hero-text">
+        Sign in to manage borrowers, loans, interest, and collections.
+      </p>
+      <div class="status-card">
+        <span class="status-dot" aria-hidden="true"></span>
+        Built for simple lending records and interest tracking
+      </div>
+    </section>
+
+    <section class="login-panel" aria-label="Login form">
+      <div class="panel-top">
+        <p class="panel-kicker">login to app</p>
+        <h2></h2>
+        <p class="panel-copy">
+          Use your username and password to access your lending dashboard.
+          <strong></strong>
+        </p>
+      </div>
+
+      <form class="login-form" id="loginForm">
+        <label class="field">
+          <span>Username</span>
+          <input type="text" name="username" placeholder="Enter your username" autocomplete="username" required>
+        </label>
+
+        <label class="field">
+          <span>Password</span>
+          <div class="password-wrap">
+            <input type="password" name="password" id="passwordField" placeholder="Enter your password" autocomplete="current-password" required>
+            <button type="button" class="toggle-btn" id="togglePassword" aria-label="Show password">Show</button>
+          </div>
+        </label>
+
+        <button type="submit" class="submit-btn" id="submitButton">Log in</button>
+        <p class="form-note" id="formNote" aria-live="polite">Ready when you are.</p>
+      </form>
+
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

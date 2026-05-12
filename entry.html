@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Entry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="entry-body">
+  <main class="app-shell">
+    <aside class="sidebar" aria-label="Main menu">
+      <div class="sidebar-brand">
+        <p class="eyebrow">Workspace</p>
+        <h2>Loan Desk</h2>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="home.html" class="nav-item">Home</a>
+        <a href="summary.html" class="nav-item">Summary</a>
+        <a href="entry.html" class="nav-item is-active">Add Loan</a>
+        <a href="data.html" class="nav-item">Data</a>
+        <a href="change-password.html" class="nav-item">Change Password</a>
+        <button type="button" class="nav-item nav-button mobile-logout" data-logout>Logout</button>
+      </nav>
+
+      <div class="sidebar-userbar">
+        <p class="sidebar-username" id="sidebarUsername">User</p>
+        <button type="button" class="logout-btn sidebar-logout" id="logoutButton" data-logout>Log out</button>
+      </div>
+    </aside>
+
+    <section class="entry-shell">
+      <section class="entry-header">
+        <div>
+          <p class="eyebrow">Loan workspace</p>
+          <h1>Loan Form</h1>
+          <p class="entry-copy">Capture ID, customer, amount, dates, material, weights, articles, and notes in one sheet-ready form.</p>
+        </div>
+      </section>
+
+      <section class="entry-panel" aria-label="Data entry form">
+        <form class="entry-form" id="entryForm">
+          <label class="field">
+            <span>ID <span class="required-mark">*</span></span>
+            <input type="text" name="id" id="panField" placeholder="Enter loan ID" required>
+          </label>
+
+          <label class="field">
+            <span>Name <span class="required-mark">*</span></span>
+            <input type="text" name="name" id="nameField" placeholder="Enter customer name" required>
+          </label>
+
+          <label class="field">
+            <span>Amount <span class="required-mark">*</span></span>
+            <input type="text" name="amount" id="amountField" inputmode="decimal" placeholder="0.00" required>
+          </label>
+
+          <label class="field">
+            <span>Deposit Date <span class="required-mark">*</span></span>
+            <input type="date" name="depositDate" id="invoiceDateField" required>
+          </label>
+
+          <label class="field">
+            <span>Expiry Date <span class="required-mark">*</span></span>
+            <input type="date" name="expiryDate" id="dateField" required>
+          </label>
+
+          <label class="field">
+            <span>Interest Rate <span class="required-mark">*</span></span>
+            <select name="interestRate" id="taxableAmountField" required>
+              <option value="">Loading...</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Item Material <span class="required-mark">*</span></span>
+            <select name="itemMaterial" id="categoryField" required>
+              <option value="">Loading...</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Gold Weight</span>
+            <input type="text" name="goldWeight" id="tdsField" inputmode="decimal" placeholder="0.000">
+          </label>
+
+          <label class="field">
+            <span>Silver Weight</span>
+            <input type="text" name="silverWeight" id="gstField" inputmode="decimal" placeholder="0.000">
+          </label>
+
+          <label class="field">
+            <span>Gold Rate</span>
+            <input type="text" name="goldRate" id="goldRateField" inputmode="decimal" disabled>
+          </label>
+
+          <label class="field">
+            <span>Silver Rate</span>
+            <input type="text" name="silverRate" id="silverRateField" inputmode="decimal" disabled>
+          </label>
+
+          <label class="field">
+            <span>Gold Purity %</span>
+            <input type="text" name="goldPurity" id="goldPurityField" inputmode="decimal">
+          </label>
+
+          <label class="field">
+            <span>Silver Purity %</span>
+            <input type="text" name="silverPurity" id="silverPurityField" inputmode="decimal">
+          </label>
+
+          <label class="field">
+            <span>Value</span>
+            <input type="text" name="value" id="valueField" inputmode="decimal" disabled>
+          </label>
+
+          <label class="field">
+            <span>Margin %</span>
+            <input type="text" name="margin" id="marginField" inputmode="decimal" disabled>
+          </label>
+
+          <label class="field field-wide">
+            <span>Articles <span class="required-mark">*</span></span>
+            <textarea name="articles" id="workDetailsField" rows="3" required></textarea>
+          </label>
+
+          <label class="field field-wide">
+            <span>Notes</span>
+            <textarea name="notes" id="othersField" rows="3"></textarea>
+          </label>
+
+          <div class="entry-actions field-wide">
+            <button type="submit" class="submit-btn">Save Loan</button>
+            <p class="form-note" id="entryNote" aria-live="polite">Ready for your next loan record.</p>
+          </div>
+        </form>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop hidden" id="masterModalBackdrop">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="masterModalTitle">
+      <div class="modal-top">
+        <div>
+          <p class="eyebrow">Master data</p>
+          <h2 id="masterModalTitle">Add Borrower and PAN / ID</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeMasterModal" aria-label="Close">x</button>
+      </div>
+
+      <div class="add-master-grid">
+        <label class="field">
+          <span>Borrower Name</span>
+          <input type="text" id="newNameField" placeholder="Enter borrower name">
+        </label>
+
+        <label class="field">
+          <span>PAN / ID</span>
+          <input type="text" id="newPanField" placeholder="ABCDE1234F" maxlength="10">
+        </label>
+      </div>
+
+      <div class="add-master-actions">
+        <button type="button" class="secondary-btn" id="saveMasterButton">Save Borrower</button>
+        <p class="form-note" id="masterNote" aria-live="polite">Add a borrower only if they are not already listed.</p>
+      </div>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="permissions.js?v=20260512-1"></script>
+  <script src="entry.js"></script>
+</body>
+</html>

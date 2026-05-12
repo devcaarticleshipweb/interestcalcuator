@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="entry-body">
+  <main class="app-shell">
+    <aside class="sidebar" aria-label="Main menu">
+      <div class="sidebar-brand">
+        <p class="eyebrow">Workspace</p>
+        <h2>Loan Desk</h2>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="home.html" class="nav-item">Home</a>
+        <a href="summary.html" class="nav-item">Summary</a>
+        <a href="entry.html" class="nav-item">Add Loan</a>
+        <a href="data.html" class="nav-item is-active">Data</a>
+        <a href="change-password.html" class="nav-item">Change Password</a>
+        <button type="button" class="nav-item nav-button mobile-logout" data-logout>Logout</button>
+      </nav>
+
+      <div class="sidebar-userbar">
+        <p class="sidebar-username" id="sidebarUsername">User</p>
+        <button type="button" class="logout-btn sidebar-logout" id="logoutButton" data-logout>Log out</button>
+      </div>
+    </aside>
+
+    <section class="entry-shell">
+      <section class="entry-header">
+        <div>
+          <p class="eyebrow">Records</p>
+          <h1>Data</h1>
+          <p class="entry-copy">Review saved loan records and export them for reporting or offline work.</p>
+        </div>
+        <div class="data-toolbar">
+          <button type="button" class="secondary-btn" id="refreshButton">Refresh</button>
+          <button type="button" class="submit-btn data-export-btn" id="exportButton">Export to Excel</button>
+        </div>
+      </section>
+
+      <section class="entry-panel">
+        <div class="data-filters">
+          <label class="field">
+            <span>Name</span>
+            <input type="text" id="nameFilterField" placeholder="Filter by name">
+          </label>
+
+          <label class="field">
+            <span>From Date</span>
+            <input type="date" id="fromDateFilterField">
+          </label>
+
+          <label class="field">
+            <span>To Date</span>
+            <input type="date" id="toDateFilterField">
+          </label>
+
+          <div class="data-filter-actions">
+            <button type="button" class="secondary-btn" id="clearFiltersButton">Clear Filters</button>
+          </div>
+        </div>
+
+        <p class="form-note" id="dataNote" aria-live="polite">Loading saved loan records...</p>
+        <div class="table-shell">
+          <table class="data-table" id="dataTable">
+            <thead id="dataTableHead"></thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop hidden" id="editModalBackdrop">
+    <section class="modal-card modal-card-wide" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+      <div class="modal-top">
+        <div>
+          <p class="eyebrow">Data</p>
+          <h2 id="editModalTitle">Edit Loan</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeEditModal" aria-label="Close">x</button>
+      </div>
+
+      <form class="entry-form" id="editForm">
+        <input type="hidden" id="editRowNumber">
+
+        <label class="field">
+          <span>Name <span class="required-mark">*</span></span>
+          <input type="text" id="editNameField" required>
+        </label>
+
+        <label class="field">
+          <span>ID <span class="required-mark">*</span></span>
+          <input type="text" id="editPanField" required>
+        </label>
+
+        <label class="field">
+          <span>Amount <span class="required-mark">*</span></span>
+          <input type="text" id="editAmountField" inputmode="decimal" required>
+        </label>
+
+        <label class="field">
+          <span>Deposit Date <span class="required-mark">*</span></span>
+          <input type="date" id="editInvoiceDateField" required>
+        </label>
+
+        <label class="field">
+          <span>Expiry Date <span class="required-mark">*</span></span>
+          <input type="date" id="editDateField" required>
+        </label>
+
+        <label class="field">
+          <span>Interest Rate <span class="required-mark">*</span></span>
+          <select id="editTaxableAmountField" required>
+            <option value="">Loading...</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Item Material <span class="required-mark">*</span></span>
+          <select id="editCategoryField" required>
+            <option value="">Loading...</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Gold Weight</span>
+          <input type="text" id="editTdsField" inputmode="decimal">
+        </label>
+
+        <label class="field">
+          <span>Silver Weight</span>
+          <input type="text" id="editGstField" inputmode="decimal">
+        </label>
+
+        <label class="field">
+          <span>Gold Rate</span>
+          <input type="text" id="editGoldRateField" inputmode="decimal" disabled>
+        </label>
+
+        <label class="field">
+          <span>Silver Rate</span>
+          <input type="text" id="editSilverRateField" inputmode="decimal" disabled>
+        </label>
+
+        <label class="field">
+          <span>Gold Purity %</span>
+          <input type="text" id="editGoldPurityField" inputmode="decimal">
+        </label>
+
+        <label class="field">
+          <span>Silver Purity %</span>
+          <input type="text" id="editSilverPurityField" inputmode="decimal">
+        </label>
+
+        <label class="field">
+          <span>Value</span>
+          <input type="text" id="editValueField" inputmode="decimal" disabled>
+        </label>
+
+        <label class="field">
+          <span>Margin %</span>
+          <input type="text" id="editMarginField" inputmode="decimal" disabled>
+        </label>
+
+        <label class="field field-wide">
+          <span>Articles <span class="required-mark">*</span></span>
+          <textarea id="editWorkDetailsField" rows="4" required></textarea>
+        </label>
+
+        <label class="field field-wide">
+          <span>Notes</span>
+          <textarea id="editOthersField" rows="4"></textarea>
+        </label>
+
+        <div class="entry-actions field-wide">
+          <button type="submit" class="submit-btn" id="saveEditButton">Save Changes</button>
+          <p class="form-note" id="editNote" aria-live="polite">Update the fields and save the changes.</p>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="permissions.js?v=20260512-1"></script>
+  <script src="data.js"></script>
+</body>
+</html>
