@@ -8,6 +8,7 @@ const logoutButtons = document.querySelectorAll("[data-logout]");
 const sidebarUsername = document.getElementById("sidebarUsername");
 const welcomeTitle = document.getElementById("welcomeTitle");
 const interestDateField = document.getElementById("interestDateField");
+const borrowerFilterField = document.getElementById("borrowerFilterField");
 const homeNote = document.getElementById("homeNote");
 const homeTableBody = document.getElementById("homeTableBody");
 const homeCardList = document.getElementById("homeCardList");
@@ -43,6 +44,10 @@ interestDateField.addEventListener("change", () => {
   renderHomeTable();
 });
 
+borrowerFilterField.addEventListener("change", () => {
+  renderHomeTable();
+});
+
 closeViewModalButton.addEventListener("click", () => {
   closeViewModal();
 });
@@ -66,11 +71,14 @@ async function loadEntries() {
 
     entryHeaders = result.headers;
     entryRows = normalizeEntryRows(result.data);
+    populateBorrowerFilter();
     renderHomeTable();
   } catch (error) {
     entryHeaders = [];
     entryRows = [];
     homeTableBody.innerHTML = "";
+    homeCardList.innerHTML = "";
+    populateSelect(borrowerFilterField, [], "No active names found");
     setHomeNote(error.message || "Could not load saved loan records.", "is-error");
   }
 }
@@ -132,6 +140,50 @@ function normalizeEntryRows(rows) {
   });
 }
 
+
+function populateBorrowerFilter() {
+  const nameIndex = getHeaderIndex(["Name", "Borrower Name"]);
+  if (nameIndex === -1) {
+    populateSelect(borrowerFilterField, [], 'No "Name" column found');
+    return;
+  }
+
+  const names = uniqueNames(entryRows.map((rowEntry) => rowEntry.values[nameIndex]));
+  populateSelect(borrowerFilterField, names, names.length ? "Select name" : "No active names found");
+}
+
+function populateSelect(select, values, placeholderText) {
+  select.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = placeholderText;
+  select.appendChild(placeholder);
+
+  values.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+}
+
+function uniqueNames(values) {
+  const seen = {};
+  return values
+    .map((value) => String(value || "").trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!value || seen[key]) {
+        return false;
+      }
+
+      seen[key] = true;
+      return true;
+    })
+    .sort((left, right) => left.localeCompare(right));
+}
+
 function renderHomeTable() {
   homeTableBody.innerHTML = "";
   homeCardList.innerHTML = "";
@@ -141,15 +193,31 @@ function renderHomeTable() {
     return;
   }
 
+  const selectedName = String(borrowerFilterField.value || "").trim();
   const selectedDate = interestDateField.value || getTodayInputValue();
   const idIndex = getHeaderIndex(["ID", "PAN / ID"]);
   const nameIndex = getHeaderIndex(["Name", "Borrower Name"]);
+
+  if (!selectedName) {
+    setHomeNote("Select a name to view loan records.", "");
+    return;
+  }
+
+  const filteredRows = nameIndex === -1
+    ? []
+    : entryRows.filter((rowEntry) => String(rowEntry.values[nameIndex] || "").trim().toLowerCase() === selectedName.toLowerCase());
+
+  if (!filteredRows.length) {
+    setHomeNote("No loan records found for the selected name.", "");
+    return;
+  }
+
   const amountIndex = getHeaderIndex(["Amount", "Principal Amount"]);
   const marginIndex = getHeaderIndex(["Margin %", "Margin"]);
   const depositDateIndex = getHeaderIndex(["Deposit Date", "Loan Start Date", "Date"]);
   const articlesIndex = getHeaderIndex(["Articles", "Loan Notes", "Work Details"]);
 
-  entryRows.forEach((rowEntry) => {
+  filteredRows.forEach((rowEntry) => {
     const row = rowEntry.values;
     const tr = document.createElement("tr");
     const cells = [
@@ -192,7 +260,7 @@ function renderHomeTable() {
     }));
   });
 
-  setHomeNote(`${entryRows.length} loan record${entryRows.length === 1 ? "" : "s"} shown.`, "is-success");
+  setHomeNote(`${filteredRows.length} loan record${filteredRows.length === 1 ? "" : "s"} shown for ${selectedName}.`, "is-success");
 }
 
 function buildHomeCard(rowEntry, values) {

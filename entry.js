@@ -40,6 +40,7 @@ let goldRate = 0;
 let silverRate = 0;
 let goldPurity = 0;
 let silverPurity = 0;
+let activeItemNames = [];
 
 const enterNavigationFields = [
   idField,
@@ -67,6 +68,7 @@ if (session) {
   sidebarUsername.textContent = session.fullName || getUsername(session.username || session.email || "User");
 }
 
+void loadActiveItemNames();
 void loadSettings();
 toggleWeightFields();
 
@@ -176,13 +178,111 @@ async function saveEntry() {
     toggleWeightFields();
     calculateValueAndMargin();
     setEntryNote("Loan saved successfully. You can now add another record.", "is-success");
-    focusAndSelectField(idField);
+    focusAndSelectField(nameField);
   } catch (error) {
     setEntryNote(error.message || "Loan could not be saved.", "is-error");
   } finally {
     submitButton.disabled = false;
     submitButton.textContent = "Save Loan";
   }
+}
+
+
+async function loadActiveItemNames() {
+  if (!GOOGLE_SCRIPT_URL) {
+    populateNameSelect([]);
+    return;
+  }
+
+  try {
+    const result = await loadEntriesJsonp();
+    if (!result.success || !Array.isArray(result.headers) || !Array.isArray(result.data)) {
+      throw new Error(result.message || "Active Items are unavailable.");
+    }
+
+    const nameIndex = result.headers.indexOf("Name");
+    if (nameIndex === -1) {
+      throw new Error('The "Active Items" sheet must include a "Name" column.');
+    }
+
+    activeItemNames = uniqueNames(result.data.map((rowEntry) => {
+      const row = rowEntry && Array.isArray(rowEntry.values) ? rowEntry.values : rowEntry;
+      return Array.isArray(row) ? row[nameIndex] : "";
+    }));
+    populateNameSelect(activeItemNames);
+  } catch (error) {
+    activeItemNames = [];
+    populateNameSelect([]);
+    setEntryNote(error.message || "Could not load active names.", "is-error");
+  }
+}
+
+function loadEntriesJsonp() {
+  return new Promise((resolve, reject) => {
+    const callbackName = `entryNamesCallback_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const script = document.createElement("script");
+    const url = new URL(GOOGLE_SCRIPT_URL);
+
+    url.searchParams.set("action", "entries");
+    url.searchParams.set("callback", callbackName);
+
+    const cleanup = () => {
+      delete window[callbackName];
+      script.remove();
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Active Items request timed out."));
+    }, 10000);
+
+    window[callbackName] = (payload) => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      resolve(payload);
+    };
+
+    script.onerror = () => {
+      window.clearTimeout(timeoutId);
+      cleanup();
+      reject(new Error("Could not reach the Active Items service."));
+    };
+
+    script.src = url.toString();
+    document.body.appendChild(script);
+  });
+}
+
+function populateNameSelect(names) {
+  nameField.innerHTML = "";
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = names.length ? "Select name" : "No active names found";
+  nameField.appendChild(placeholder);
+
+  names.forEach((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    nameField.appendChild(option);
+  });
+}
+
+function uniqueNames(values) {
+  const seen = {};
+  return values
+    .map((value) => String(value || "").trim())
+    .filter((value) => {
+      const key = value.toLowerCase();
+      if (!value || seen[key]) {
+        return false;
+      }
+
+      seen[key] = true;
+      return true;
+    })
+    .sort((left, right) => left.localeCompare(right));
 }
 
 async function loadSettings() {

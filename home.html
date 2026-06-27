@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260627-1">
 </head>
 <body class="entry-body">
   <main class="app-shell">
@@ -40,6 +40,13 @@
 
       <section class="entry-panel">
         <div class="data-filters">
+          <label class="field">
+            <span>Name</span>
+            <select id="borrowerFilterField">
+              <option value="">Loading names...</option>
+            </select>
+          </label>
+
           <label class="field">
             <span>Date</span>
             <input type="date" id="interestDateField">
@@ -84,6 +91,6 @@
 
   <script src="config.js"></script>
   <script src="permissions.js?v=20260512-1"></script>
-  <script src="home.js"></script>
+  <script src="home.js?v=20260627-1"></script>
 </body>
 </html>
