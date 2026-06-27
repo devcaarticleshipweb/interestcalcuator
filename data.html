@@ -188,8 +188,32 @@
     </section>
   </div>
 
+
+  <div class="modal-backdrop hidden" id="matureModalBackdrop">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="matureModalTitle">
+      <div class="modal-top">
+        <div>
+          <p class="eyebrow">Data</p>
+          <h2 id="matureModalTitle">Mature Loan</h2>
+        </div>
+        <button type="button" class="modal-close" id="closeMatureModal" aria-label="Close">x</button>
+      </div>
+
+      <form class="entry-form" id="matureForm">
+        <label class="field field-wide">
+          <span>Date of Maturity <span class="required-mark">*</span></span>
+          <input type="date" id="maturityDateField" required>
+        </label>
+
+        <div class="entry-actions field-wide">
+          <button type="submit" class="submit-btn" id="confirmMatureButton">Mature</button>
+          <p class="form-note" id="matureNote" aria-live="polite">Select the date up to which interest should be charged.</p>
+        </div>
+      </form>
+    </section>
+  </div>
   <script src="config.js"></script>
   <script src="permissions.js?v=20260512-1"></script>
-  <script src="data.js?v=20260627-1"></script>
+  <script src="data.js?v=20260627-2"></script>
 </body>
 </html>

@@ -35,6 +35,12 @@ const editCategoryField = document.getElementById("editCategoryField");
 const editWorkDetailsField = document.getElementById("editWorkDetailsField");
 const saveEditButton = document.getElementById("saveEditButton");
 const editNote = document.getElementById("editNote");
+const matureModalBackdrop = document.getElementById("matureModalBackdrop");
+const closeMatureModalButton = document.getElementById("closeMatureModal");
+const matureForm = document.getElementById("matureForm");
+const maturityDateField = document.getElementById("maturityDateField");
+const confirmMatureButton = document.getElementById("confirmMatureButton");
+const matureNote = document.getElementById("matureNote");
 const editGoldWeightWrapper = editTdsField.closest(".field");
 const editSilverWeightWrapper = editGstField.closest(".field");
 const editGoldRateWrapper = editGoldRateField.closest(".field");
@@ -75,6 +81,8 @@ let goldRate = 0;
 let silverRate = 0;
 let goldPurity = 0;
 let silverPurity = 0;
+let pendingMatureRowNumber = null;
+let pendingMatureButton = null;
 
 const session = getSession();
 
@@ -130,6 +138,21 @@ editModalBackdrop.addEventListener("click", (event) => {
   }
 });
 
+
+closeMatureModalButton.addEventListener("click", () => {
+  closeMatureModal();
+});
+
+matureModalBackdrop.addEventListener("click", (event) => {
+  if (event.target === matureModalBackdrop) {
+    closeMatureModal();
+  }
+});
+
+matureForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void matureEntry();
+});
 editForm.addEventListener("submit", (event) => {
   event.preventDefault();
   void saveEditedEntry();
@@ -474,7 +497,7 @@ function renderTable() {
       matureButton.className = "secondary-btn table-action-btn";
       matureButton.textContent = "Mature";
       matureButton.addEventListener("click", () => {
-        void matureEntry(rowEntry.rowNumber, matureButton);
+        openMatureModal(rowEntry.rowNumber, matureButton);
       });
 
       actionCell.append(editButton, matureButton);
@@ -667,34 +690,64 @@ async function saveEditedEntry() {
   }
 }
 
-async function matureEntry(rowNumber, button) {
-  if (!GOOGLE_SCRIPT_URL) {
-    setDataNote("Add your Google Apps Script web app URL in config.js before maturing loan records.", "is-error");
+function openMatureModal(rowNumber, button) {
+  const rowEntry = entryRowsByRowNumber.get(Number(rowNumber));
+  if (!rowEntry) {
+    setDataNote("That entry could not be found for maturity.", "is-error");
     return;
   }
 
-  const rowEntry = entryRowsByRowNumber.get(Number(rowNumber));
-  const row = rowEntry?.values || [];
-  const id = row[2] ? ` ID ${row[2]}` : "";
-  const name = row[3] ? ` for ${row[3]}` : "";
-  const confirmed = window.confirm(`Mature loan${id}${name}? This will move it from Active Items to Matured Items.`);
+  pendingMatureRowNumber = rowNumber;
+  pendingMatureButton = button;
+  maturityDateField.value = formatDateInput(new Date());
+  setMatureNote("Select the date up to which interest should be charged.", "");
+  matureModalBackdrop.classList.remove("hidden");
 
-  if (!confirmed) {
+  window.setTimeout(() => {
+    maturityDateField.focus();
+  }, 0);
+}
+
+function closeMatureModal() {
+  matureModalBackdrop.classList.add("hidden");
+  matureForm.reset();
+  pendingMatureRowNumber = null;
+  pendingMatureButton = null;
+  confirmMatureButton.disabled = false;
+  confirmMatureButton.textContent = "Mature";
+  setMatureNote("Select the date up to which interest should be charged.", "");
+}
+
+async function matureEntry() {
+  if (!GOOGLE_SCRIPT_URL) {
+    setMatureNote("Add your Google Apps Script web app URL in config.js before maturing loan records.", "is-error");
+    return;
+  }
+
+  if (!pendingMatureRowNumber) {
+    setMatureNote("Select a loan record to mature.", "is-error");
+    return;
+  }
+
+  if (!maturityDateField.value) {
+    setMatureNote("Date of maturity is required.", "is-error");
     return;
   }
 
   const payload = {
     action: "matureEntry",
-    rowNumber: rowNumber,
+    rowNumber: pendingMatureRowNumber,
     maturedBy: session.loginId || getUsername(session.username || session.email || ""),
-    maturityDate: formatDateInput(new Date())
+    maturityDate: maturityDateField.value
   };
 
-  if (button) {
-    button.disabled = true;
-    button.textContent = "Maturing...";
+  confirmMatureButton.disabled = true;
+  confirmMatureButton.textContent = "Maturing...";
+  if (pendingMatureButton) {
+    pendingMatureButton.disabled = true;
+    pendingMatureButton.textContent = "Maturing...";
   }
-  setDataNote("Maturing loan and calculating interest...", "");
+  setMatureNote("Maturing loan and calculating interest...", "");
 
   try {
     const response = await fetch(GOOGLE_SCRIPT_URL, {
@@ -715,17 +768,19 @@ async function matureEntry(rowNumber, button) {
     }
 
     const interest = formatIndianInteger(parseIndianNumber(result.maturityInterest));
+    closeMatureModal();
     await loadEntries();
     setDataNote(`Loan matured successfully. Interest charged: Rs. ${interest}.`, "is-success");
   } catch (error) {
-    setDataNote(error.message || "Loan could not be matured.", "is-error");
-    if (button) {
-      button.disabled = false;
-      button.textContent = "Mature";
+    setMatureNote(error.message || "Loan could not be matured.", "is-error");
+    confirmMatureButton.disabled = false;
+    confirmMatureButton.textContent = "Mature";
+    if (pendingMatureButton) {
+      pendingMatureButton.disabled = false;
+      pendingMatureButton.textContent = "Mature";
     }
   }
 }
-
 function sanitizeNumericInput(field) {
   const cleaned = String(field.value || "").replace(/[^0-9.]/g, "");
   const firstDotIndex = cleaned.indexOf(".");
@@ -918,6 +973,15 @@ function setEditNote(message, state = "") {
   }
 }
 
+
+function setMatureNote(message, state = "") {
+  matureNote.textContent = message;
+  matureNote.classList.remove("is-error", "is-success");
+
+  if (state) {
+    matureNote.classList.add(state);
+  }
+}
 function escapeHtml(value) {
   return String(value ?? "")
     .replaceAll("&", "&amp;")
