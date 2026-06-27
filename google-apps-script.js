@@ -1,6 +1,7 @@
 const USERS_SHEET_NAME = "Users";
 const MASTER_DATA_SHEET_NAME = "Master Data";
 const ENTRIES_SHEET_NAME = "Active Items";
+const MATURED_ITEMS_SHEET_NAME = "Matured Items";
 const SETTINGS_SHEET_NAME = "Settings";
 const GOOGLE_SHEET_ID = "";
 const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
@@ -23,6 +24,11 @@ const ENTRY_HEADERS = [
   "Articles",
   "Notes"
 ];
+const MATURED_ITEM_HEADERS = ENTRY_HEADERS.concat([
+  "Maturity Date",
+  "Matured By",
+  "Maturity Interest"
+]);
 
 function doGet(e) {
   const action = String((e && e.parameter && e.parameter.action) || "").trim().toLowerCase();
@@ -61,6 +67,10 @@ function doPost(e) {
 
     if (action === "updateentry") {
       return updateEntry(payload);
+    }
+
+    if (action === "matureentry") {
+      return matureEntry(payload);
     }
 
     if (action === "addmasterdata") {
@@ -394,6 +404,51 @@ function updateEntry(payload) {
   });
 }
 
+function matureEntry(payload) {
+  const rowNumber = Number(payload.rowNumber);
+  const maturedBy = String(payload.maturedBy || payload.submittedBy || "").trim();
+  const maturityDate = normalizeDateInput(payload.maturityDate) || getTodayDateString();
+
+  if (!userHasPermission(maturedBy, "canEditLoan")) {
+    return jsonResponse({
+      success: false,
+      message: "You do not have permission to mature loan records."
+    });
+  }
+
+  if (!Number.isInteger(rowNumber) || rowNumber < 2) {
+    return jsonResponse({
+      success: false,
+      message: "Invalid entry row."
+    });
+  }
+
+  const activeSheet = getOrCreateEntriesSheet();
+  if (rowNumber > activeSheet.getLastRow()) {
+    return jsonResponse({
+      success: false,
+      message: "That loan record was not found in Active Items."
+    });
+  }
+
+  const rowValues = activeSheet.getRange(rowNumber, 1, 1, ENTRY_HEADERS.length).getDisplayValues()[0];
+  const maturityInterest = calculateMaturityInterest(rowValues, maturityDate);
+  const maturedSheet = getOrCreateMaturedItemsSheet();
+
+  maturedSheet.appendRow(rowValues.concat([
+    maturityDate,
+    maturedBy,
+    maturityInterest
+  ]));
+  activeSheet.deleteRow(rowNumber);
+
+  return jsonResponse({
+    success: true,
+    message: "Loan matured successfully.",
+    maturityInterest: maturityInterest
+  });
+}
+
 function addMasterData(payload) {
   const name = String(payload.name || "").trim();
   const pan = String(payload.pan || "").trim().toUpperCase();
@@ -639,6 +694,113 @@ function getOrCreateEntriesSheet() {
   }
 
   return sheet;
+}
+
+function getOrCreateMaturedItemsSheet() {
+  const spreadsheet = getSpreadsheet();
+  let sheet = spreadsheet.getSheetByName(MATURED_ITEMS_SHEET_NAME);
+
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(MATURED_ITEMS_SHEET_NAME);
+  }
+
+  const hasHeaders = sheet.getLastRow() > 0;
+  if (!hasHeaders) {
+    sheet.getRange(1, 1, 1, MATURED_ITEM_HEADERS.length).setValues([MATURED_ITEM_HEADERS]);
+    return sheet;
+  }
+
+  const currentHeaders = sheet.getRange(1, 1, 1, MATURED_ITEM_HEADERS.length).getDisplayValues()[0];
+  const headersMatch = MATURED_ITEM_HEADERS.every((header, index) => String(currentHeaders[index] || "").trim() === header);
+  if (!headersMatch) {
+    sheet.getRange(1, 1, 1, MATURED_ITEM_HEADERS.length).setValues([MATURED_ITEM_HEADERS]);
+  }
+
+  return sheet;
+}
+
+function calculateMaturityInterest(rowValues, maturityDateValue) {
+  const amount = normalizeNumericValue(rowValues[4]);
+  const depositDate = parseDateValue(rowValues[5]);
+  const maturityDate = parseDateValue(maturityDateValue);
+  const interestRate = normalizeNumericValue(rowValues[7]);
+
+  if (!amount || !interestRate || !depositDate || !maturityDate || maturityDate < depositDate) {
+    return 0;
+  }
+
+  const duration = getInterestDuration(depositDate, maturityDate);
+  const monthlyInterest = amount * (interestRate / 100);
+  const interest = (monthlyInterest * duration.months) + ((monthlyInterest / 30) * duration.days);
+  return roundToNearestTen(interest);
+}
+
+function getInterestDuration(depositDate, targetDate) {
+  const startDate = new Date(depositDate.getFullYear(), depositDate.getMonth(), depositDate.getDate());
+  const endDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+  let months = (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth());
+
+  if (endDate.getDate() < startDate.getDate()) {
+    months -= 1;
+  }
+
+  months = Math.max(months, 0);
+  const monthAnchor = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  monthAnchor.setMonth(monthAnchor.getMonth() + months);
+  const days = Math.max(Math.floor((endDate.getTime() - monthAnchor.getTime()) / 86400000), 0);
+
+  return {
+    months: months,
+    days: days
+  };
+}
+
+function roundToNearestTen(value) {
+  return Math.round(value / 10) * 10;
+}
+
+function getTodayDateString() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+}
+
+function normalizeDateInput(value) {
+  const parsed = parseDateValue(value);
+  return parsed ? formatDateString(parsed) : "";
+}
+
+function parseDateValue(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  const stringValue = String(value || "").trim();
+  if (!stringValue) {
+    return null;
+  }
+
+  let match = stringValue.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (match) {
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+
+  match = stringValue.match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (match) {
+    return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  }
+
+  match = stringValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (match) {
+    return new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  }
+
+  return null;
+}
+
+function formatDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return year + "-" + month + "-" + day;
 }
 
 function normalizeNumericValue(value) {

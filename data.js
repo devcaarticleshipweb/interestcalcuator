@@ -459,6 +459,8 @@ function renderTable() {
 
     if (canEditLoan) {
       const actionCell = document.createElement("td");
+      actionCell.className = "table-actions";
+
       const editButton = document.createElement("button");
       editButton.type = "button";
       editButton.className = "secondary-btn table-action-btn";
@@ -466,7 +468,16 @@ function renderTable() {
       editButton.addEventListener("click", () => {
         openEditModal(rowEntry.rowNumber);
       });
-      actionCell.appendChild(editButton);
+
+      const matureButton = document.createElement("button");
+      matureButton.type = "button";
+      matureButton.className = "secondary-btn table-action-btn";
+      matureButton.textContent = "Mature";
+      matureButton.addEventListener("click", () => {
+        void matureEntry(rowEntry.rowNumber, matureButton);
+      });
+
+      actionCell.append(editButton, matureButton);
       tr.appendChild(actionCell);
     }
 
@@ -653,6 +664,65 @@ async function saveEditedEntry() {
   } finally {
     saveEditButton.disabled = false;
     saveEditButton.textContent = "Save Changes";
+  }
+}
+
+async function matureEntry(rowNumber, button) {
+  if (!GOOGLE_SCRIPT_URL) {
+    setDataNote("Add your Google Apps Script web app URL in config.js before maturing loan records.", "is-error");
+    return;
+  }
+
+  const rowEntry = entryRowsByRowNumber.get(Number(rowNumber));
+  const row = rowEntry?.values || [];
+  const id = row[2] ? ` ID ${row[2]}` : "";
+  const name = row[3] ? ` for ${row[3]}` : "";
+  const confirmed = window.confirm(`Mature loan${id}${name}? This will move it from Active Items to Matured Items.`);
+
+  if (!confirmed) {
+    return;
+  }
+
+  const payload = {
+    action: "matureEntry",
+    rowNumber: rowNumber,
+    maturedBy: session.loginId || getUsername(session.username || session.email || ""),
+    maturityDate: formatDateInput(new Date())
+  };
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Maturing...";
+  }
+  setDataNote("Maturing loan and calculating interest...", "");
+
+  try {
+    const response = await fetch(GOOGLE_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to reach the maturity service.");
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      throw new Error(result.message || "Loan could not be matured.");
+    }
+
+    const interest = formatIndianInteger(parseIndianNumber(result.maturityInterest));
+    await loadEntries();
+    setDataNote(`Loan matured successfully. Interest charged: Rs. ${interest}.`, "is-success");
+  } catch (error) {
+    setDataNote(error.message || "Loan could not be matured.", "is-error");
+    if (button) {
+      button.disabled = false;
+      button.textContent = "Mature";
+    }
   }
 }
 

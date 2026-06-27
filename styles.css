@@ -835,6 +835,11 @@ body {
   color: var(--ink);
 }
 
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 .table-action-btn {
   width: auto;
   min-width: 96px;
