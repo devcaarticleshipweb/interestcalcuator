@@ -25,28 +25,28 @@ void initializePermissions();
 async function initializePermissions() {
   const session = getPermissionSession();
   if (!session) {
+    document.documentElement.classList.remove("permissions-loading");
     return;
   }
-
-  if (!session.permissions || !Object.keys(session.permissions).length) {
-    localStorage.removeItem("lendingUserSession");
-    window.location.href = "index.html";
-    return;
-  }
-
-  applyPagePermissions(session);
-  document.documentElement.classList.remove("permissions-loading");
 
   try {
     const freshPermissions = await loadFreshPermissions(session);
-    if (freshPermissions) {
-      session.permissions = freshPermissions;
-      localStorage.setItem("lendingUserSession", JSON.stringify(session));
-      applyPagePermissions(session);
-      document.documentElement.classList.remove("permissions-loading");
+    if (!freshPermissions || !Object.keys(freshPermissions).length) {
+      throw new Error("Permissions unavailable.");
     }
+
+    session.permissions = freshPermissions;
+    localStorage.setItem("lendingUserSession", JSON.stringify(session));
+    applyPagePermissions(session);
   } catch {
-    // Keep the locally stored permissions if the network is temporarily unavailable.
+    if (!session.permissions || !Object.keys(session.permissions).length) {
+      localStorage.removeItem("lendingUserSession");
+      window.location.href = "index.html";
+      return;
+    }
+
+    applyPagePermissions(session);
+  } finally {
     document.documentElement.classList.remove("permissions-loading");
   }
 }
@@ -86,6 +86,7 @@ function loadFreshPermissions(session) {
     url.searchParams.set("action", "permissions");
     url.searchParams.set("username", username);
     url.searchParams.set("callback", callbackName);
+    url.searchParams.set("_", String(Date.now()));
 
     const cleanup = () => {
       delete window[callbackName];

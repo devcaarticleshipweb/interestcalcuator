@@ -850,12 +850,12 @@ function normalizeNumericValue(value) {
 
 function buildPermissions(headers, row) {
   return {
-    canViewHome: readPermission(headers, row, ["canviewhome", "viewhome", "home"], true),
-    canViewSummary: readPermission(headers, row, ["canviewsummary", "viewsummary", "summary"], true),
-    canAddLoan: readPermission(headers, row, ["canaddloan", "addloan", "addrecord"], true),
-    canViewData: readPermission(headers, row, ["canviewdata", "viewdata", "data"], true),
-    canEditLoan: readPermission(headers, row, ["caneditloan", "editloan", "editrecord"], true),
-    canChangePassword: readPermission(headers, row, ["canchangepassword", "changepassword"], true)
+    canViewHome: readPermission(headers, row, ["canviewhome", "viewhome", "home"], false),
+    canViewSummary: readPermission(headers, row, ["canviewsummary", "viewsummary", "summary"], false),
+    canAddLoan: readPermission(headers, row, ["canaddloan", "addloan", "addrecord"], false),
+    canViewData: readPermission(headers, row, ["canviewdata", "viewdata", "data"], false),
+    canEditLoan: readPermission(headers, row, ["caneditloan", "editloan", "editrecord"], false),
+    canChangePassword: readPermission(headers, row, ["canchangepassword", "changepassword"], false)
   };
 }
 
