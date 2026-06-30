@@ -278,6 +278,13 @@ function getAllowedNames() {
 
 function populateNameSelect(names) {
   nameField.innerHTML = "";
+  const wrapper = nameField.closest(".field");
+  const allowed = getAllowedNames();
+  const shouldHideSingleName = !allowed.all && names.length === 1;
+
+  if (wrapper) {
+    wrapper.classList.toggle("hidden", shouldHideSingleName);
+  }
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
@@ -290,6 +297,10 @@ function populateNameSelect(names) {
     option.textContent = name;
     nameField.appendChild(option);
   });
+
+  if (shouldHideSingleName) {
+    nameField.value = names[0];
+  }
 }
 
 function uniqueNames(values) {

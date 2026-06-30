@@ -55,7 +55,10 @@ function applyPagePermissions(session) {
   document.querySelectorAll(".sidebar-nav a[href]").forEach((link) => {
     const href = link.getAttribute("href");
     const permission = NAV_PERMISSION_BY_HREF[href];
-    link.classList.toggle("hidden", Boolean(permission && !hasPermission(session, permission)));
+    const shouldHide = Boolean(permission && !hasPermission(session, permission));
+    link.classList.toggle("hidden", shouldHide);
+    link.hidden = shouldHide;
+    link.style.display = shouldHide ? "none" : "";
   });
 
   const pageName = getCurrentPageName();

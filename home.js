@@ -155,6 +155,12 @@ function populateBorrowerFilter() {
 function populateBorrowerSelect(names) {
   borrowerFilterField.innerHTML = "";
   const allowed = getAllowedNames();
+  const wrapper = borrowerFilterField.closest(".field");
+  const shouldHideSingleName = !allowed.all && names.length === 1;
+
+  if (wrapper) {
+    wrapper.classList.toggle("hidden", shouldHideSingleName);
+  }
 
   if (allowed.all && names.length) {
     const allOption = document.createElement("option");
@@ -164,6 +170,10 @@ function populateBorrowerSelect(names) {
   }
 
   populateSelectOptions(borrowerFilterField, names, names.length ? "Select name" : "No active names found", allowed.all && names.length);
+
+  if (shouldHideSingleName) {
+    borrowerFilterField.value = names[0];
+  }
 }
 
 function populateSelect(select, values, placeholderText) {

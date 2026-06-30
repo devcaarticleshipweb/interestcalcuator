@@ -512,8 +512,9 @@ body {
   gap: 1.1rem 1.25rem;
 }
 
-.hidden {
-  display: none;
+.hidden,
+.nav-item.hidden {
+  display: none !important;
 }
 
 .permissions-loading .sidebar-nav {
@@ -676,8 +677,9 @@ body {
   z-index: 20;
 }
 
-.modal-backdrop.hidden {
-  display: none;
+.modal-backdrop.hidden,
+.nav-item.hidden {
+  display: none !important;
 }
 
 .modal-card {
