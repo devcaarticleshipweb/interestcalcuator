@@ -65,6 +65,7 @@ async function handleLogin() {
         username: getUsername(String(result.username || username).trim()),
         fullName: String(result.fullName || result.username || username).trim(),
         loginId: String(result.loginId || username).trim(),
+        allowedNames: normalizeAllowedNames(result.allowedNames),
         permissions: result.permissions || {}
       };
       localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -87,4 +88,18 @@ async function handleLogin() {
 function getUsername(value) {
   const rawValue = String(value || "").trim();
   return rawValue.includes("@") ? rawValue.split("@")[0] : rawValue;
+}
+
+function normalizeAllowedNames(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return {
+      all: value.all !== false,
+      names: Array.isArray(value.names) ? value.names : []
+    };
+  }
+
+  return {
+    all: false,
+    names: []
+  };
 }

@@ -148,12 +148,33 @@ function populateBorrowerFilter() {
     return;
   }
 
-  const names = uniqueNames(entryRows.map((rowEntry) => rowEntry.values[nameIndex]));
-  populateSelect(borrowerFilterField, names, names.length ? "Select name" : "No active names found");
+  const names = filterNamesBySession(uniqueNames(entryRows.map((rowEntry) => rowEntry.values[nameIndex])));
+  populateBorrowerSelect(names);
+}
+
+function populateBorrowerSelect(names) {
+  borrowerFilterField.innerHTML = "";
+  const allowed = getAllowedNames();
+
+  if (allowed.all && names.length) {
+    const allOption = document.createElement("option");
+    allOption.value = "__ALL__";
+    allOption.textContent = "All";
+    borrowerFilterField.appendChild(allOption);
+  }
+
+  populateSelectOptions(borrowerFilterField, names, names.length ? "Select name" : "No active names found", allowed.all && names.length);
 }
 
 function populateSelect(select, values, placeholderText) {
   select.innerHTML = "";
+  populateSelectOptions(select, values, placeholderText, false);
+}
+
+function populateSelectOptions(select, values, placeholderText, keepExistingOptions) {
+  if (!keepExistingOptions) {
+    select.innerHTML = "";
+  }
 
   const placeholder = document.createElement("option");
   placeholder.value = "";
@@ -184,6 +205,43 @@ function uniqueNames(values) {
     .sort((left, right) => left.localeCompare(right));
 }
 
+
+function filterNamesBySession(names) {
+  const allowed = getAllowedNames();
+  if (allowed.all) {
+    return names;
+  }
+
+  const allowedSet = new Set(allowed.names.map((name) => name.toLowerCase()));
+  return names.filter((name) => allowedSet.has(name.toLowerCase()));
+}
+
+function filterRowsBySession(rows, nameIndex) {
+  if (nameIndex === -1) {
+    return [];
+  }
+
+  const allowed = getAllowedNames();
+  if (allowed.all) {
+    return rows;
+  }
+
+  const allowedSet = new Set(allowed.names.map((name) => name.toLowerCase()));
+  return rows.filter((rowEntry) => allowedSet.has(String(rowEntry.values[nameIndex] || "").trim().toLowerCase()));
+}
+
+function getAllowedNames() {
+  const allowedNames = session?.allowedNames;
+  if (!allowedNames || typeof allowedNames !== "object") {
+    return { all: false, names: [] };
+  }
+
+  return {
+    all: allowedNames.all !== false,
+    names: Array.isArray(allowedNames.names) ? allowedNames.names.map((name) => String(name || "").trim()).filter(Boolean) : []
+  };
+}
+
 function renderHomeTable() {
   homeTableBody.innerHTML = "";
   homeCardList.innerHTML = "";
@@ -203,9 +261,10 @@ function renderHomeTable() {
     return;
   }
 
-  const filteredRows = nameIndex === -1
-    ? []
-    : entryRows.filter((rowEntry) => String(rowEntry.values[nameIndex] || "").trim().toLowerCase() === selectedName.toLowerCase());
+  const allowedRows = filterRowsBySession(entryRows, nameIndex);
+  const filteredRows = selectedName === "__ALL__"
+    ? allowedRows
+    : allowedRows.filter((rowEntry) => String(rowEntry.values[nameIndex] || "").trim().toLowerCase() === selectedName.toLowerCase());
 
   if (!filteredRows.length) {
     setHomeNote("No loan records found for the selected name.", "");
@@ -260,7 +319,8 @@ function renderHomeTable() {
     }));
   });
 
-  setHomeNote(`${filteredRows.length} loan record${filteredRows.length === 1 ? "" : "s"} shown for ${selectedName}.`, "is-success");
+  const noteName = selectedName === "__ALL__" ? "All" : selectedName;
+  setHomeNote(`${filteredRows.length} loan record${filteredRows.length === 1 ? "" : "s"} shown for ${noteName}.`, "is-success");
 }
 
 function buildHomeCard(rowEntry, values) {

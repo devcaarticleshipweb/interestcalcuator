@@ -205,10 +205,10 @@ async function loadActiveItemNames() {
       throw new Error('The "Active Items" sheet must include a "Name" column.');
     }
 
-    activeItemNames = uniqueNames(result.data.map((rowEntry) => {
+    activeItemNames = filterNamesBySession(uniqueNames(result.data.map((rowEntry) => {
       const row = rowEntry && Array.isArray(rowEntry.values) ? rowEntry.values : rowEntry;
       return Array.isArray(row) ? row[nameIndex] : "";
-    }));
+    })));
     populateNameSelect(activeItemNames);
   } catch (error) {
     activeItemNames = [];
@@ -251,6 +251,29 @@ function loadEntriesJsonp() {
     script.src = url.toString();
     document.body.appendChild(script);
   });
+}
+
+
+function filterNamesBySession(names) {
+  const allowed = getAllowedNames();
+  if (allowed.all) {
+    return names;
+  }
+
+  const allowedSet = new Set(allowed.names.map((name) => name.toLowerCase()));
+  return names.filter((name) => allowedSet.has(name.toLowerCase()));
+}
+
+function getAllowedNames() {
+  const allowedNames = session?.allowedNames;
+  if (!allowedNames || typeof allowedNames !== "object") {
+    return { all: false, names: [] };
+  }
+
+  return {
+    all: allowedNames.all !== false,
+    names: Array.isArray(allowedNames.names) ? allowedNames.names.map((name) => String(name || "").trim()).filter(Boolean) : []
+  };
 }
 
 function populateNameSelect(names) {

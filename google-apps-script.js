@@ -128,6 +128,7 @@ function doPost(e) {
 
     const statusIndex = headers.indexOf("status");
     const fullNameIndex = headers.indexOf("full name");
+    const allowedNameIndex = headers.indexOf("name");
     const matchedUser = rows.slice(1).find((row) => {
       const rowUsername = String(row[usernameIndex] || "").trim().toLowerCase();
       const rowPassword = String(row[passwordIndex] || "").trim();
@@ -152,6 +153,7 @@ function doPost(e) {
 
     const username = String(matchedUser[usernameIndex] || "").trim();
     const fullName = fullNameIndex === -1 ? "" : String(matchedUser[fullNameIndex] || "").trim();
+    const allowedNames = parseAllowedNames(allowedNameIndex === -1 ? "" : matchedUser[allowedNameIndex]);
     const permissions = buildPermissions(headers, matchedUser);
 
     return jsonResponse({
@@ -160,6 +162,7 @@ function doPost(e) {
       username: username || usernameInput,
       fullName: fullName || username || usernameInput,
       loginId: username || usernameInput,
+      allowedNames: allowedNames,
       permissions: permissions
     });
   } catch (error) {
@@ -254,6 +257,41 @@ function changePassword(payload) {
   });
 }
 
+function parseAllowedNames(value) {
+  const rawValue = String(value || "").trim();
+  if (rawValue.toLowerCase() === "all") {
+    return {
+      all: true,
+      names: []
+    };
+  }
+
+  if (!rawValue) {
+    return {
+      all: false,
+      names: []
+    };
+  }
+
+  const seen = {};
+  const names = rawValue
+    .split(",")
+    .map((name) => name.trim())
+    .filter((name) => {
+      const key = name.toLowerCase();
+      if (!name || seen[key]) {
+        return false;
+      }
+
+      seen[key] = true;
+      return true;
+    });
+
+  return {
+    all: false,
+    names: names
+  };
+}
 function getPermissionsResponse(parameters, callback) {
   const username = String((parameters && (parameters.username || parameters.email)) || "").trim();
   const user = getUserRecord(username);
